@@ -107,17 +107,17 @@ def extract_times(page1, page2):
         re.DOTALL | re.IGNORECASE
    )
 
-   if time_match:
-
+    if time_match:
+    
     start_time = time_match.group(1).strip()
     end_time = time_match.group(2).strip()
-
+    
     break_raw = time_match.group(3).strip()
     travel_raw = time_match.group(4).strip()
-
+    
     break_time = convert_duration(break_raw)
     travel_time = convert_duration(travel_raw)
-
+    
     return (
         start_time,
         end_time,
