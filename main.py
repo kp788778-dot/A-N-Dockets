@@ -99,14 +99,14 @@ def extract_times(page1, page2):
     travel_time = ""
 
    time_match = re.search(
-        r"(\d{2}:\d{2}\s+[AP]M)\s+"
-        r"(\d{2}:\d{2}\s+[AP]M)\s+"
-        r"(.*?)\s+"
-        r"(.*?)\s+"
-        r"Total Time",
-        combined_text,
-        re.DOTALL | re.IGNORECASE
-    )
+       r"(\d{2}:\d{2}\s+[AP]M)\s+"
+       r"(\d{2}:\d{2}\s+[AP]M)\s+"
+       r"(.*?)\s+"
+       r"(.*?)\s+"
+       r"Total Time",
+       combined_text,
+       re.DOTALL | re.IGNORECASE
+   )
 
    if time_match:
 
