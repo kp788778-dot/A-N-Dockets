@@ -1,3 +1,4 @@
+
 import streamlit as st
 import pdfplumber
 import pandas as pd
@@ -5,7 +6,6 @@ import re
 import io
 import zipfile
 from datetime import datetime
-from pathlib import Path
 
 st.set_page_config(
     page_title="Docket Data Extractor",
@@ -44,6 +44,24 @@ def format_folder_date(date_str):
         return "Unknown Date"
 
 
+def convert_duration(text):
+
+    if not text:
+        return ""
+
+    text = text.lower().strip()
+
+    mins_match = re.search(r"(\d+)\s*minute", text)
+    if mins_match:
+        return round(int(mins_match.group(1)) / 60, 2)
+
+    hrs_match = re.search(r"(\d+)\s*hour", text)
+    if hrs_match:
+        return float(hrs_match.group(1))
+
+    return text
+
+
 def normalise_material(material):
 
     material_lower = material.lower()
@@ -54,33 +72,74 @@ def normalise_material(material):
     elif "roadbase" in material_lower:
         return "Crushed Rock Basecourse"
 
-    else:
-        return material.strip()
+    return material.strip()
 
 
 def extract_material(page2):
 
-    material = ""
-
-    block_match = re.search(
-        r"Items\s+(.*?)\s+\d+\.\d+\s*T",
+    material_match = re.search(
+        r"\)\s*-\s*([A-Za-z0-9\s]+?)\s+\d+\.\d+\s*T",
         page2,
-        re.DOTALL | re.IGNORECASE
+        re.DOTALL
     )
 
-    if block_match:
+    if material_match:
+        return material_match.group(1).strip()
 
-        block = block_match.group(1)
+    return ""
 
-        candidates = re.findall(
-            r"-\s*([^\n]+)",
-            block
+
+def extract_times(page1, page2):
+
+    combined_text = page1 + "\n" + page2
+
+    start_time = ""
+    end_time = ""
+    break_time = ""
+    travel_time = ""
+
+    time_match = re.search(
+        r"(\d{2}:\d{2}\s+[AP]M)\s+"
+        r"(\d{2}:\d{2}\s+[AP]M)\s+"
+        r"(\d+\s+(?:Minutes?|Hour|Hours?))\s+"
+        r"(\d+\s+(?:Minutes?|Hour|Hours?))",
+        combined_text,
+        re.IGNORECASE
+    )
+
+    if time_match:
+
+        start_time = time_match.group(1).strip()
+        end_time = time_match.group(2).strip()
+
+        break_time = convert_duration(
+            time_match.group(3)
         )
 
-        if candidates:
-            material = candidates[-1].strip()
+        travel_time = convert_duration(
+            time_match.group(4)
+        )
 
-    return material
+    return (
+        start_time,
+        end_time,
+        break_time,
+        travel_time
+    )
+
+
+def extract_total_tonnage(page2):
+
+    total_match = re.search(
+        r"\)\s*-\s*[^\n]+\s+(\d+\.\d+)\s*T\s+New Activity",
+        page2,
+        re.DOTALL
+    )
+
+    if total_match:
+        return float(total_match.group(1))
+
+    return ""
 
 
 def extract_docket(uploaded_file):
@@ -129,27 +188,12 @@ def extract_docket(uploaded_file):
         # Times
         # -------------------------
 
-        start_time = ""
-        end_time = ""
-        break_time = ""
-        travel_time = ""
-
-        time_match = re.search(
-            r"(\d{2}:\d{2}\s+[AP]M)\s+"
-            r"(\d{2}:\d{2}\s+[AP]M)\s+"
-            r"(.*?)\s+"
-            r"(.*?)\s+"
-            r"Total Time",
-            page2,
-            re.DOTALL
-        )
-
-        if time_match:
-
-            start_time = time_match.group(1).strip()
-            end_time = time_match.group(2).strip()
-            break_time = time_match.group(3).strip()
-            travel_time = time_match.group(4).strip()
+        (
+            start_time,
+            end_time,
+            break_time,
+            travel_time
+        ) = extract_times(page1, page2)
 
         # -------------------------
         # Material
@@ -163,16 +207,7 @@ def extract_docket(uploaded_file):
         # Total tonnage
         # -------------------------
 
-        total_tonnage = ""
-
-        total_match = re.search(
-            r"(\d+\.\d+)\s*T\s+New Activity",
-            page2,
-            re.DOTALL
-        )
-
-        if total_match:
-            total_tonnage = float(total_match.group(1))
+        total_tonnage = extract_total_tonnage(page2)
 
         # -------------------------
         # Individual tonnages
@@ -211,7 +246,7 @@ def extract_docket(uploaded_file):
 
 
 # =====================================================
-# UPLOADER
+# UI
 # =====================================================
 
 uploaded_files = st.file_uploader(
@@ -236,9 +271,9 @@ if uploaded_files:
         summary_rows = []
         error_rows = []
 
-        progress = st.progress(0)
-
         extracted = []
+
+        progress = st.progress(0)
 
         for i, uploaded_file in enumerate(uploaded_files):
 
@@ -343,14 +378,10 @@ if uploaded_files:
             zipfile.ZIP_DEFLATED
         ) as zf:
 
-            # Excel workbook
-
             zf.writestr(
                 "Docket_Tracker.xlsx",
                 excel_buffer.getvalue()
             )
-
-            # Sorted PDFs
 
             for item in extracted:
 
@@ -376,3 +407,4 @@ if uploaded_files:
             file_name="Processed_Dockets.zip",
             mime="application/zip"
         )
+
