@@ -289,7 +289,7 @@ def extract_docket(uploaded_file):
 
         docket = extract_docket_number(page1)
         date = extract_date(page1)
-        operator = extract_operator(page1)
+        #operator = extract_operator(page1)
         start_time, end_time, break_time, travel_time = extract_times(page1, page2)
         material = extract_material(page2)
         total_tonnage = extract_total_tonnage(page2)
@@ -301,7 +301,7 @@ def extract_docket(uploaded_file):
             "date": date,
             "folder_date": format_folder_date(date),
             "docket": docket,
-            "operator": operator,
+            #"operator": operator,
             "material": material,
             "start_time": start_time,
             "end_time": end_time,
@@ -324,7 +324,7 @@ def build_row_collections(extracted):
     '''
     Takes the list of successfully extracted docket dictionaries and splits
     them into four row collections used to populate the Excel sheets:
-      - labour_rows: one row per docket with time/operator information
+      - labour_rows: one row per docket with time/operator information (removed operator)
       - sand_rows: one row per individual load where material is Heidelberg Sand
       - roadbase_rows: one row per individual load where material is Crushed Rock Basecourse
       - summary_rows: one row per docket with total tonnage and material
@@ -343,7 +343,7 @@ def build_row_collections(extracted):
         labour_rows.append({
             "Date": r["date"],
             "Docket Number": r["docket"],
-            "Operator": r["operator"],
+            #"Operator": r["operator"],
             "Start Time": r["start_time"],
             "End Time": r["end_time"],
             "Break Time (hrs)": r["break_time"],
@@ -353,7 +353,7 @@ def build_row_collections(extracted):
         summary_rows.append({
             "Date": r["date"],
             "Docket": r["docket"],
-            "Operator": r["operator"],
+            #"Operator": r["operator"],
             "Material": r["material"],
             "Total Tonnage": r["total_tonnage"],
         })
@@ -363,7 +363,7 @@ def build_row_collections(extracted):
                 "Date": r["date"],
                 "Zone": "",
                 "Docket": r["docket"],
-                "Operator": r["operator"],
+                #"Operator": r["operator"],
                 "Tonnage": tonnage,
             }
             if r["material"] == "Heidelberg Sand":
@@ -442,8 +442,8 @@ def render_preview(extracted, error_rows):
     Renders an interactive preview of all extracted data directly in the
     Streamlit app before the user downloads the ZIP.
     Shows three expandable sections:
-      1. Docket Summary table — date, docket, operator, material, total tonnage
-      2. Labour table — date, docket, operator, and all time fields
+      1. Docket Summary table — date, docket, operator (removed), material, total tonnage
+      2. Labour table — date, docket, operator (removed), and all time fields
       3. Errors table — only shown if any PDFs failed to extract
 
     Uses st.expander so the tables are collapsed by default and don't
@@ -458,7 +458,7 @@ def render_preview(extracted, error_rows):
         {
             "Date": r["date"],
             "Docket": r["docket"],
-            "Operator": r["operator"],
+            #"Operator": r["operator"],
             "Material": r["material"] if r["material"] else "Not detected",
             "Total Tonnage (T)": r["total_tonnage"],
             "Individual Loads": len(r["tonnages"]),
@@ -470,7 +470,7 @@ def render_preview(extracted, error_rows):
         {
             "Date": r["date"],
             "Docket": r["docket"],
-            "Operator": r["operator"],
+            #"Operator": r["operator"],
             "Start Time": r["start_time"],
             "End Time": r["end_time"],
             "Break (hrs)": r["break_time"],
@@ -513,12 +513,12 @@ def render_metrics(extracted, error_rows):
 
     col1, col2, col3, col4, col5, col6, col7 = st.columns(7)
     col1.metric("PDFs Uploaded", total)
-    col2.metric("✅ Extracted", len(extracted))
-    col3.metric("❌ Failed", len(error_rows))
+    col2.metric("Extracted", len(extracted))
+    col3.metric("Failed", len(error_rows))
     col4.metric("Total Tonnage (T)", f"{total_tonnage:,.2f}")
-    col5.metric("🟡 Sand Dockets", sand_count)
-    col6.metric("🔵 Roadbase Dockets", roadbase_count)
-    col7.metric("⚠️ Unknown Material", unknown_count)
+    col5.metric("Sand Dockets", sand_count)
+    col6.metric("Roadbase Dockets", roadbase_count)
+    col7.metric("Unknown Material", unknown_count)
 
 
 # =====================================================
