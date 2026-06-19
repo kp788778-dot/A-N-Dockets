@@ -49,17 +49,20 @@ def convert_duration(text):
     if not text:
         return ""
 
-    text = text.lower().strip()
+    text = text.lower()
 
-    mins_match = re.search(r"(\d+)\s*minute", text)
-    if mins_match:
-        return round(int(mins_match.group(1)) / 60, 2)
+    total_hours = 0
 
-    hrs_match = re.search(r"(\d+)\s*hour", text)
-    if hrs_match:
-        return float(hrs_match.group(1))
+    hour_match = re.search(r"(\d+)\s*hour", text)
+    minute_match = re.search(r"(\d+)\s*minute", text)
 
-    return text
+    if hour_match:
+        total_hours += int(hour_match.group(1))
+
+    if minute_match:
+        total_hours += int(minute_match.group(1)) / 60
+
+    return round(total_hours, 2)
 
 
 def normalise_material(material):
@@ -77,14 +80,11 @@ def normalise_material(material):
 
 def extract_material(page2):
 
-    material_match = re.search(
-        r"\)\s*-\s*([A-Za-z0-9\s]+?)\s+\d+\.\d+\s*T",
-        page2,
-        re.DOTALL
-    )
+    if "roadbase" in page2.lower():
+        return "Crushed Rock Basecourse"
 
-    if material_match:
-        return material_match.group(1).strip()
+    if "sand" in page2.lower():
+        return "Heidelberg Sand"
 
     return ""
 
@@ -98,27 +98,26 @@ def extract_times(page1, page2):
     break_time = ""
     travel_time = ""
 
-    time_match = re.search(
+   time_match = re.search(
         r"(\d{2}:\d{2}\s+[AP]M)\s+"
         r"(\d{2}:\d{2}\s+[AP]M)\s+"
-        r"(\d+\s+(?:Minutes?|Hour|Hours?))\s+"
-        r"(\d+\s+(?:Minutes?|Hour|Hours?))",
+        r"(.*?)\s+"
+        r"(.*?)\s+"
+        r"Total Time",
         combined_text,
-        re.IGNORECASE
+        re.DOTALL | re.IGNORECASE
     )
 
-    if time_match:
+   if time_match:
 
-        start_time = time_match.group(1).strip()
-        end_time = time_match.group(2).strip()
+    start_time = time_match.group(1).strip()
+    end_time = time_match.group(2).strip()
 
-        break_time = convert_duration(
-            time_match.group(3)
-        )
+    break_raw = time_match.group(3).strip()
+    travel_raw = time_match.group(4).strip()
 
-        travel_time = convert_duration(
-            time_match.group(4)
-        )
+    break_time = convert_duration(break_raw)
+    travel_time = convert_duration(travel_raw)
 
     return (
         start_time,
@@ -130,16 +129,17 @@ def extract_times(page1, page2):
 
 def extract_total_tonnage(page2):
 
-    total_match = re.search(
-        r"\)\s*-\s*[^\n]+\s+(\d+\.\d+)\s*T\s+New Activity",
-        page2,
-        re.DOTALL
+    matches = re.findall(
+        r"(\d+\.\d+)\s*T",
+        page2
     )
 
-    if total_match:
-        return float(total_match.group(1))
+    if not matches:
+        return ""
 
-    return ""
+    values = [float(x) for x in matches]
+
+    return max(values)
 
 
 def extract_docket(uploaded_file):
