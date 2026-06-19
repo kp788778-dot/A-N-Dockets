@@ -376,4 +376,3 @@ if uploaded_files:
             file_name="Processed_Dockets.zip",
             mime="application/zip"
         )
-```
