@@ -292,6 +292,7 @@ def extract_docket(uploaded_file):
         #operator = extract_operator(page1)
         start_time, end_time, break_time, travel_time = extract_times(page1, page2)
         material = extract_material(page2)
+        gate, zone = extract_gate_and_zone(page2)
         total_tonnage = extract_total_tonnage(page2)
         tonnages = extract_individual_tonnages(page2)
 
@@ -303,6 +304,8 @@ def extract_docket(uploaded_file):
             "docket": docket,
             #"operator": operator,
             "material": material,
+            "gate": gate,       
+            "zone": zone,
             "start_time": start_time,
             "end_time": end_time,
             "break_time": break_time,
@@ -319,6 +322,55 @@ def extract_docket(uploaded_file):
             "error": str(e),
         }
 
+def extract_gate_and_zone(page2):
+    '''
+    Extracts the gate identifier from the Items section description on page 2
+    and maps it to a hardcoded zone using a lookup table.
+
+    The gate appears in the item description text, e.g.:
+      "Cartage Only (Gate A3) - Roadbase ..."
+    The regex looks for a parenthesised word starting with a letter followed
+    by digits, immediately after the word "Gate" (case-insensitive).
+
+    Gate-to-zone mapping (hardcoded):
+      A2 → A2,  R2 → A2,  R9 → A3,  A3 → A3,  A4 → A4,
+      R8 → A3,  R3 → D1,  D1 → D1,  D4 → D4,  R6 → D4,
+      R4 → D2,  D2 → D2
+
+    Returns a tuple of (gate, zone).
+    Both are empty strings if no gate is found or the gate is not in the
+    lookup table, so the Zone cell stays blank for manual completion rather
+    than showing an incorrect value.
+    '''
+    GATE_TO_ZONE = {
+        "A2": "A2",
+        "R2": "A2",
+        "R9": "A3",
+        "A3": "A3",
+        "A4": "A4",
+        "R8": "A3",
+        "R3": "D1",
+        "D1": "D1",
+        "D4": "D4",
+        "R6": "D4",
+        "R4": "D2",
+        "D2": "D2",
+    }
+
+    match = re.search(r"Gate\s+([A-Za-z]\d+)", page2, re.IGNORECASE)
+    if not match:
+        return "", ""
+
+    gate = match.group(1).upper()
+    zone = GATE_TO_ZONE.get(gate, "")
+
+    if not zone:
+        st.warning(
+            f"Gate '{gate}' was found in a docket but is not in the zone "
+            "lookup table. Zone will be left blank for manual entry."
+        )
+
+    return gate, zone
 
 def build_row_collections(extracted):
     '''
@@ -352,6 +404,7 @@ def build_row_collections(extracted):
 
         summary_rows.append({
             "Date": r["date"],
+            "Zone": r["zone"],
             "Docket": r["docket"],
             #"Operator": r["operator"],
             "Material": r["material"],
