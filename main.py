@@ -130,7 +130,11 @@ def extract_docket_number(page1):
     because that is how it is referenced in other documents.
     Returns an empty string if no match is found.
     '''
-    match = re.search(r"Docket\s+(A\s*[&\-]+\s*D[\-\s]+\d+)", page1, re.IGNORECASE)
+    match = re.search(r"Docket\s+(A\s*[&\-\w]+\s*D[\-\s]+\d+)", page1, re.IGNORECASE)
+    # New dockets as of 21SEPT26. Should still work for old variation.
+
+    # Docket [one or more whitespace] A [0 or more spaces] [& or -] [ 0 or more spaces] D [hyphen or space] [one or more digits]
+    # \s --> whitespace; * --> 0 or more, + --> 1 or more
     if match:
         # Normalise internal whitespace/punctuation for consistency
         raw = match.group(1).strip()
