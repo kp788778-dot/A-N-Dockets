@@ -711,13 +711,8 @@ def main():
         roadbase_rows,
         summary_rows,
         error_rows
-    )
 
-    st.download_button(
-        label="📥 Download Processed ZIP",
-        data=zip_bytes,
-        file_name="Processed_Dockets.zip",
-        mime="application/zip",
+
     )
 
 
