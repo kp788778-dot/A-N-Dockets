@@ -433,17 +433,10 @@ def build_row_collections(extracted):
 
 def add_copy_sand_button(sand_rows):
     '''
-    Adds a Streamlit button that copies all Heidelberg Sand Tracker data
-    to the clipboard in tab-separated column format.
+    Displays Heidelberg Sand data in a copyable text box.
 
-    The copied data contains:
-      Date
-      Zone
-      Docket
-      Tonnage
-
-    Column headings are deliberately excluded so the data can be pasted
-    directly underneath existing Excel headings.
+    The data is formatted as tab-separated values with no headings,
+    so it can be pasted directly into Excel.
     '''
 
     if not sand_rows:
@@ -458,28 +451,50 @@ def add_copy_sand_button(sand_rows):
         for row in sand_rows
     )
 
-    # Escape the text so it can safely be placed inside JavaScript
+    # Escape characters that could interfere with HTML/JavaScript
     escaped_text = (
         clipboard_text
-        .replace("\\", "\\\\")
-        .replace("`", "\\`")
-        .replace("${", "\\${")
+        .replace("&", "&amp;")
+        .replace("<", "&lt;")
+        .replace(">", "&gt;")
+        .replace('"', "&quot;")
     )
 
-    # Button
-    if st.button("Copy Heidelberg Sand Data"):
-        st.components.v1.html(
-            f"""
-            <script>
-                navigator.clipboard.writeText(`{escaped_text}`);
-            </script>
-            """,
-            height=0,
-        )
+    st.markdown("Copy Heidelberg Sand Data")
 
-        st.success(
-            f"Copied {len(sand_rows)} Heidelberg Sand rows to clipboard."
-        )
+    st.components.v1.html(
+        f"""
+        <textarea id="sandData"
+            style="
+                width:100%;
+                height:150px;
+                font-family:monospace;
+                font-size:13px;
+                white-space:pre;
+                overflow:auto;
+            "
+            readonly>{escaped_text}</textarea>
+
+        <br>
+
+        <button
+            onclick="
+                const textarea = document.getElementById('sandData');
+                textarea.focus();
+                textarea.select();
+                document.execCommand('copy');
+            "
+            style="
+                padding:8px 16px;
+                font-size:14px;
+                cursor:pointer;
+            "
+        >
+            📋 Copy Heidelberg Sand Data
+        </button>
+        """,
+        height=220,
+    )
 
 
 def build_excel(labour_rows, sand_rows, roadbase_rows, summary_rows, error_rows):
