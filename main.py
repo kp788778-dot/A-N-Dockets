@@ -725,7 +725,7 @@ def main():
         sand_rows,
         roadbase_rows,
         summary_rows,
-        error_rows
+        error_rows)
 
     # ---- Build ZIP ----
     zip_bytes = build_zip(excel_bytes, extracted)
