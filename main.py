@@ -418,7 +418,7 @@ def build_row_collections(extracted):
         for tonnage in r["tonnages"]:
             row = {
                 "Date": r["date"],
-                "Zone": "",
+                "Zone": r["zone"],
                 "Docket": r["docket"],
                 #"Operator": r["operator"],
                 "Tonnage": tonnage,
