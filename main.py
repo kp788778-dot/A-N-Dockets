@@ -431,6 +431,57 @@ def build_row_collections(extracted):
     return labour_rows, sand_rows, roadbase_rows, summary_rows
 
 
+def add_copy_sand_button(sand_rows):
+    '''
+    Adds a Streamlit button that copies all Heidelberg Sand Tracker data
+    to the clipboard in tab-separated column format.
+
+    The copied data contains:
+      Date
+      Zone
+      Docket
+      Tonnage
+
+    Column headings are deliberately excluded so the data can be pasted
+    directly underneath existing Excel headings.
+    '''
+
+    if not sand_rows:
+        return
+
+    # Build tab-separated rows with no headings
+    clipboard_text = "\n".join(
+        "\t".join(
+            str(row[column])
+            for column in ["Date", "Zone", "Docket", "Tonnage"]
+        )
+        for row in sand_rows
+    )
+
+    # Escape the text so it can safely be placed inside JavaScript
+    escaped_text = (
+        clipboard_text
+        .replace("\\", "\\\\")
+        .replace("`", "\\`")
+        .replace("${", "\\${")
+    )
+
+    # Button
+    if st.button("Copy Heidelberg Sand Data"):
+        st.components.v1.html(
+            f"""
+            <script>
+                navigator.clipboard.writeText(`{escaped_text}`);
+            </script>
+            """,
+            height=0,
+        )
+
+        st.success(
+            f"Copied {len(sand_rows)} Heidelberg Sand rows to clipboard."
+        )
+
+
 def build_excel(labour_rows, sand_rows, roadbase_rows, summary_rows, error_rows):
     '''
     Builds an in-memory Excel workbook (.xlsx) with five sheets:
@@ -639,18 +690,28 @@ def main():
     status.empty()
     progress.empty()
 
-    # ---- Results ----
+
+# ---- Results ----
     st.success(
         f"Extraction complete — {len(extracted)} succeeded, {len(error_rows)} failed."
     )
-
+    
     render_metrics(extracted, error_rows)
     render_preview(extracted, error_rows)
-
+    
     # ---- Build outputs ----
     labour_rows, sand_rows, roadbase_rows, summary_rows = build_row_collections(extracted)
-    excel_bytes = build_excel(labour_rows, sand_rows, roadbase_rows, summary_rows, error_rows)
-    zip_bytes = build_zip(excel_bytes, extracted)
+    
+    # Copy Heidelberg Sand data button
+    add_copy_sand_button(sand_rows)
+    
+    excel_bytes = build_excel(
+        labour_rows,
+        sand_rows,
+        roadbase_rows,
+        summary_rows,
+        error_rows
+    )
 
     st.download_button(
         label="📥 Download Processed ZIP",
