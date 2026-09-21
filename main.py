@@ -490,7 +490,7 @@ def add_copy_sand_button(sand_rows):
                 cursor:pointer;
             "
         >
-            📋 Copy Heidelberg Sand Data
+            Copy Heidelberg Sand Data
         </button>
         """,
         height=220,
@@ -732,7 +732,7 @@ def main():
 
     # ---- Download ZIP ----
     st.download_button(
-        label="📥 Download Processed ZIP",
+        label="Download Processed ZIP",
         data=zip_bytes,
         file_name="Processed_Dockets.zip",
         mime="application/zip",
