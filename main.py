@@ -727,6 +727,16 @@ def main():
         summary_rows,
         error_rows
 
+    # ---- Build ZIP ----
+    zip_bytes = build_zip(excel_bytes, extracted)
+
+    # ---- Download ZIP ----
+    st.download_button(
+        label="📥 Download Processed ZIP",
+        data=zip_bytes,
+        file_name="Processed_Dockets.zip",
+        mime="application/zip",
+
 
     )
 
